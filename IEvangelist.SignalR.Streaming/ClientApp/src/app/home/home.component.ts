@@ -31,7 +31,7 @@ export class HomeComponent implements AfterViewInit {
                 .build();
 
         this.asciiChars =
-            Array.from(new Array(95).keys()).map(i => String.fromCharCode(i));
+            ['@', '#', '$', '=', '*', '!', ';', ':', '~', '-', ',', '.', '&nbsp;', '&nbsp;'];
     }
 
     ngAfterViewInit(): void {
@@ -79,14 +79,20 @@ export class HomeComponent implements AfterViewInit {
         //    this.subject = new Subject<string>();
         //}
 
-        this.timeout = setInterval(() => this.tryDrawFrame(), 1000 / 50 /* frames per second */);        
+        this.timeout = this.interval(() => this.tryDrawFrame(), 1000 / 50 /* frames per second */);        
         //await this.connection.send('startStream', this.streamName, this.subject);
+    }
+
+    stopStream() {
+        if (this.timeout) {
+            clearInterval(this.timeout);
+        }
     }
 
     private tryDrawFrame() {
         try {
-            const height = this.video.height || 240;
-            const width = this.video.width || 320;
+            const height = this.video.height || 192;
+            const width = this.video.width || 256;
             this.context.drawImage(this.video, 0, 0, width, height);
             const imageData = this.context.getImageData(0, 0, width, height).data;
             const asciiStr = this.getAsciiString(imageData, width, height);
@@ -98,10 +104,14 @@ export class HomeComponent implements AfterViewInit {
     private getAsciiString(imageData: Uint8ClampedArray, width: number, height: number) {
         let str = '';        
         for (let i = 0; i < width * height; ++ i) {
-            if (i % width === 0) str += '\n';
+            if (i % width === 0) {
+                str += '\n';
+            }
+
             const rgb = this.getRGB(imageData, i);
             const val = Math.max(rgb[0], rgb[1], rgb[2]) / 255;
-            str += '<font style="color: rgb(' + rgb.join(',') + ')">' + this.getChar(val) + '</font>';
+
+            str += `<font style='color:${this.toHex(rgb[0], rgb[2], rgb[2])}'>${this.getChar(val)}</font>`;
         }
 
         return str;
@@ -111,7 +121,32 @@ export class HomeComponent implements AfterViewInit {
         return [imageData[i = i * 4], imageData[i + 1], imageData[i + 2]];
     }
 
-    private getChar(val: number) {
-        return this.asciiChars[parseInt((val * 94).toString(), 10)];
+    private toHex(r: number, g: number, b: number) {
+        return `#${this.toHexStr(r)}${this.toHexStr(g)}${this.toHexStr(b)}`;
     }
+
+    private toHexStr(val: number) {
+        let hex = val.toString(16);
+        return hex.length == 1 ? `0${hex}` : hex;
+    }
+
+    private getChar(val: number) {
+        return this.asciiChars[parseInt((val * this.asciiChars.length).toString(), 10)];
+    }
+
+    private interval(func: Function, wait: number) {
+        var interv = function (w) {
+            return () => {
+                setTimeout(interv, w);
+                try {
+                    func.call(null);
+                }
+                catch (e) {
+                    throw e.toString();
+                }
+            };
+        }(wait);
+
+        return setTimeout(interv, wait);
+    };
 }

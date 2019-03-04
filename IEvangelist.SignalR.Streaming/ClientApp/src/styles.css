@@ -5,6 +5,17 @@ html, body {
     background: linear-gradient(180deg, rgba(0,0,0,1) 0%, rgba(0,0,0,0.8) 80%, rgba(120,0,0,1) 100%);
 }
 
+input[type=text] {
+    padding: 12px;
+    margin: 5px;
+    border: none;
+    border-radius: 6px;
+    font-size: 1.5rem;
+}
+
+    input[type=text]:not([disabled]):hover {
+    }
+
 button {
     min-width: 8rem;
     padding: 12px;
@@ -20,6 +31,12 @@ button {
 button:not([disabled]):hover {
     cursor: pointer;
     background-color: #333;
+}
+
+pre {
+    white-space: pre;
+    display: block;
+    clear: left;
 }
 
 .sk-folding-cube {

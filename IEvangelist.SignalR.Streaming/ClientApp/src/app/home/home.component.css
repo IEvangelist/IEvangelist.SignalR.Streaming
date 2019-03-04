@@ -12,9 +12,7 @@
 }
 
     .view > #ascii {
-        display: flex;
-        justify-content: center;
-        align-items: center;
+        display: block;
     }
 
 .controls {
@@ -28,8 +26,6 @@ video, canvas {
     display: none;
 }
 
-div#ascii {
-    font-family: monospace;
-    height: 480px;
-    width: 640px;
+#ascii {
+    font: bold 8px/5px monospace;
 }
