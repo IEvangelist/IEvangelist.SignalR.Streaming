@@ -11,6 +11,12 @@
     grid-area: view;
 }
 
+    .view > #ascii {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+    }
+
 .controls {
     grid-area: controls;
     display: flex;
@@ -19,10 +25,11 @@
 }
 
 video, canvas {
-    
+    display: none;
 }
 
-pre {
-    font-size: 1.5rem;
-    color: white;
+div#ascii {
+    font-family: monospace;
+    height: 480px;
+    width: 640px;
 }

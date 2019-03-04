@@ -2,10 +2,11 @@
     <div class="view">
         <video #video autoplay></video>
         <canvas #canvas></canvas>
-        <pre #ascii></pre>
+        <div id="ascii" #ascii></div>
     </div>
     <div class="controls">
+        <input type="text" [(ngModel)]="streamName" />
         <button class='button' (click)="startStream()">Start</button>
-        <button class='button'>Stop</button>
+        <button class='button' (click)="stopStream()">Stop</button>
     </div>
 </div>

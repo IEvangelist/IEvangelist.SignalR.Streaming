@@ -11,6 +11,8 @@ export class HomeComponent implements AfterViewInit {
     @ViewChild('canvas') canvasElement: ElementRef;
     @ViewChild('ascii') asciiElement: ElementRef;
 
+    streamName: string;
+
     private video: HTMLVideoElement;    
     private canvas: HTMLCanvasElement;
     private context: CanvasRenderingContext2D;    
@@ -64,38 +66,38 @@ export class HomeComponent implements AfterViewInit {
         return getMediaStream(constraints);
     }
 
-    async startStream() {
-        if (this.connection.state === HubConnectionState.Disconnected) {
-            await this.connection.start();
-        }
+    startStream() {
+        //if (this.connection.state === HubConnectionState.Disconnected) {
+        //    await this.connection.start();
+        //}
 
         if (this.timeout) {
             clearInterval(this.timeout);
         }
 
-        if (!this.subject) {
-            this.subject = new Subject<string>();
-        }
+        //if (!this.subject) {
+        //    this.subject = new Subject<string>();
+        //}
 
-        this.timeout = setInterval(this.tryDrawFrame, 1000 / 30 /* frames per second */);        
-        await this.connection.send('startStream', this.subject);
+        this.timeout = setInterval(() => this.tryDrawFrame(), 1000 / 50 /* frames per second */);        
+        //await this.connection.send('startStream', this.streamName, this.subject);
     }
 
     private tryDrawFrame() {
         try {
-            const height = this.video.height;
-            const width = this.video.width;
+            const height = this.video.height || 240;
+            const width = this.video.width || 320;
             this.context.drawImage(this.video, 0, 0, width, height);
             const imageData = this.context.getImageData(0, 0, width, height).data;
             const asciiStr = this.getAsciiString(imageData, width, height);
-            this.renderer.setProperty(this.ascii, 'innerHtml', asciiStr);
-            this.subject.next(asciiStr);
+            this.renderer.setProperty(this.ascii, 'innerHTML', asciiStr);
+            //this.subject.next(asciiStr);
         } catch (e) { }
     }
 
     private getAsciiString(imageData: Uint8ClampedArray, width: number, height: number) {
         let str = '';        
-        for (let i = 0; i < width * height; i++) {
+        for (let i = 0; i < width * height; ++ i) {
             if (i % width === 0) str += '\n';
             const rgb = this.getRGB(imageData, i);
             const val = Math.max(rgb[0], rgb[1], rgb[2]) / 255;
