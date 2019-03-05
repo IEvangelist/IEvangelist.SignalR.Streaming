@@ -30,6 +30,21 @@ export class HomeComponent implements AfterViewInit, OnInit {
                 .configureLogging(LogLevel.Information)
                 .build();
 
+        this.connection.on("streamCreated", stream => {
+            if (this.streams) {
+                this.streams.push(stream);
+            } else {
+                this.streams = [stream];
+            }
+        });
+
+        this.connection.on("streamRemoved", stream => {
+            if (this.streams) {
+                const index = this.streams.indexOf(stream);
+                this.streams.splice(index, 1);
+            }
+        });
+
         this.asciiChars =
             ['@', '#', '$', '=', '*', '!', ';', ':', '~', '-', ',', '.', '&nbsp;', '&nbsp;'];
     }
@@ -97,7 +112,7 @@ export class HomeComponent implements AfterViewInit, OnInit {
         this.stopWatchingStream();
         this.remoteSubscription =
             this.connection
-                .stream("WatchStream", streamName)
+                .stream("watchStream", streamName)
                 .subscribe({
                     next: ascii => {
                         this.renderer.setProperty(this.ascii, 'innerHTML', ascii);

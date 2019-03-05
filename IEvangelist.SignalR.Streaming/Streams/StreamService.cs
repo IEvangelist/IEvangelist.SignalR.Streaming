@@ -73,9 +73,9 @@ namespace IEvangelist.SignalR.Streaming.Streams
 
         void TryRemoveStream(string name)
         {
-            if (_streams.TryRemove(name, out var streamRefence))
+            if (_streams.TryRemove(name, out var streamReference))
             {
-                foreach (var viewer in streamRefence.Viewers)
+                foreach (var viewer in streamReference.Viewers)
                 {
                     viewer.Value.Writer.TryComplete();
                 }
