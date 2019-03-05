@@ -1,8 +1,7 @@
 /* You can add global styles to this file, and also import other style files */
 
 html, body {
-    background: rgb(0,0,0);
-    background: linear-gradient(180deg, rgba(255,255,255,1) 0%, rgba(255,255,255,0.8) 80%, rgba(120,0,0,1) 100%);
+    background: linear-gradient(180deg, rgba(7,7,7,1) 0%, rgba(0,0,0,0.8) 90%, rgba(70,0,0,1) 100%);
 }
 
 input[type=text] {
@@ -12,9 +11,6 @@ input[type=text] {
     border-radius: 6px;
     font-size: 1.5rem;
 }
-
-    input[type=text]:not([disabled]):hover {
-    }
 
 button {
     min-width: 8rem;

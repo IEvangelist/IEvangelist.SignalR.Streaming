@@ -32,7 +32,7 @@ video {
 #ascii {
     border-radius: 6px;
     border: dotted black 3px;
-    font: bold 13px/8px monospace;
+    font: bold 1.5rem/.6rem monospace;
     font-weight: 900;
     display: block;
 }

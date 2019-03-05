@@ -119,7 +119,7 @@ export class HomeComponent implements AfterViewInit {
             const val = Math.max(rgb[0], rgb[1], rgb[2]) / 255;
             // const modColor = i % 2 == 1 ? 'background-' : '';
 
-            str += `<font style='color:${this.toHex(rgb[0], rgb[2], rgb[2])}'>${this.getChar(val)}</font>`;
+            str += `<font style='color:${this.toHex(rgb[0], rgb[1], rgb[2])}'>${this.getChar(val)}</font>`;
         }
 
         return str;
@@ -134,7 +134,7 @@ export class HomeComponent implements AfterViewInit {
     }
 
     private toHexStr(val: number) {
-        let hex = val.toString(16);
+        const hex = val.toString(16);
         return hex.length == 1 ? `0${hex}` : hex;
     }
 
