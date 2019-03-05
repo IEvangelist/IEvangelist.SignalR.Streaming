@@ -13,12 +13,11 @@ export class HomeComponent implements AfterViewInit {
 
     streamName: string;
 
-    private video: HTMLVideoElement;    
+    private video: HTMLVideoElement;
     private canvas: HTMLCanvasElement;
-    private context: CanvasRenderingContext2D;    
+    private context: CanvasRenderingContext2D;
     private ascii: HTMLPreElement;
     private connection: HubConnection;
-    private timeout: NodeJS.Timeout;
     private subject: signalR.Subject<string>;
 
     private asciiChars: string[];
@@ -66,50 +65,59 @@ export class HomeComponent implements AfterViewInit {
         return getMediaStream(constraints);
     }
 
+    private isStreaming = false;
+
     startStream() {
         //if (this.connection.state === HubConnectionState.Disconnected) {
         //    await this.connection.start();
         //}
 
-        if (this.timeout) {
-            clearInterval(this.timeout);
-        }
 
         //if (!this.subject) {
         //    this.subject = new Subject<string>();
         //}
 
-        this.timeout = this.interval(() => this.tryDrawFrame(), 1000 / 50 /* frames per second */);        
+        this.isStreaming = true;
+        this.tryDrawFrame();        
         //await this.connection.send('startStream', this.streamName, this.subject);
     }
 
     stopStream() {
-        if (this.timeout) {
-            clearInterval(this.timeout);
-        }
+        this.isStreaming = false;
     }
 
     private tryDrawFrame() {
         try {
-            const height = this.video.height || 192;
-            const width = this.video.width || 256;
-            this.context.drawImage(this.video, 0, 0, width, height);
-            const imageData = this.context.getImageData(0, 0, width, height).data;
-            const asciiStr = this.getAsciiString(imageData, width, height);
-            this.renderer.setProperty(this.ascii, 'innerHTML', asciiStr);
-            //this.subject.next(asciiStr);
-        } catch (e) { }
+            if (this.isStreaming) {
+                const height = 72;
+                const width = 96;
+                this.context.drawImage(this.video, 0, 0, width, height);
+                const imageData = this.context.getImageData(0, 0, width, height).data;
+                const asciiStr = this.getAsciiString(imageData, width, height);
+                this.renderer.setProperty(this.ascii, 'innerHTML', asciiStr);
+                //this.subject.next(asciiStr);   
+            }
+        } finally {
+            if (this.isStreaming) {
+                setTimeout(() => {
+                    if (this.isStreaming) {
+                        this.tryDrawFrame();
+                    }
+                }, 15);
+            }
+        }
     }
 
     private getAsciiString(imageData: Uint8ClampedArray, width: number, height: number) {
-        let str = '';        
-        for (let i = 0; i < width * height; ++ i) {
+        let str = '';
+        for (let i = 0; i < width * height; ++i) {
             if (i % width === 0) {
                 str += '\n';
             }
 
-            const rgb = this.getRGB(imageData, i);
+            const rgb = this.toRGB(imageData, i);
             const val = Math.max(rgb[0], rgb[1], rgb[2]) / 255;
+            // const modColor = i % 2 == 1 ? 'background-' : '';
 
             str += `<font style='color:${this.toHex(rgb[0], rgb[2], rgb[2])}'>${this.getChar(val)}</font>`;
         }
@@ -117,7 +125,7 @@ export class HomeComponent implements AfterViewInit {
         return str;
     }
 
-    private getRGB(imageData: Uint8ClampedArray, i: number) {
+    private toRGB(imageData: Uint8ClampedArray, i: number) {
         return [imageData[i = i * 4], imageData[i + 1], imageData[i + 2]];
     }
 
@@ -131,22 +139,6 @@ export class HomeComponent implements AfterViewInit {
     }
 
     private getChar(val: number) {
-        return this.asciiChars[parseInt((val * this.asciiChars.length).toString(), 10)];
+        return this.asciiChars[parseInt((val * this.asciiChars.length).toString(), 10)] || '&nbsp;';
     }
-
-    private interval(func: Function, wait: number) {
-        var interv = function (w) {
-            return () => {
-                setTimeout(interv, w);
-                try {
-                    func.call(null);
-                }
-                catch (e) {
-                    throw e.toString();
-                }
-            };
-        }(wait);
-
-        return setTimeout(interv, wait);
-    };
 }

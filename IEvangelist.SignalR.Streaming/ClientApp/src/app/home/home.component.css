@@ -9,11 +9,10 @@
 
 .view {
     grid-area: view;
+    display: flex;
+    justify-content: center;
+    align-items: center;
 }
-
-    .view > #ascii {
-        display: block;
-    }
 
 .controls {
     grid-area: controls;
@@ -26,6 +25,14 @@ video, canvas {
     display: none;
 }
 
+video {
+    transform: rotateY(180deg);
+}
+
 #ascii {
-    font: bold 8px/5px monospace;
+    border-radius: 6px;
+    border: dotted black 3px;
+    font: bold 13px/8px monospace;
+    font-weight: 900;
+    display: block;
 }

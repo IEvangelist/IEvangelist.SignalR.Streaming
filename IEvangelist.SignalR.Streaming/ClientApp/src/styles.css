@@ -2,7 +2,7 @@
 
 html, body {
     background: rgb(0,0,0);
-    background: linear-gradient(180deg, rgba(0,0,0,1) 0%, rgba(0,0,0,0.8) 80%, rgba(120,0,0,1) 100%);
+    background: linear-gradient(180deg, rgba(255,255,255,1) 0%, rgba(255,255,255,0.8) 80%, rgba(120,0,0,1) 100%);
 }
 
 input[type=text] {
