@@ -1,7 +1,7 @@
 /* You can add global styles to this file, and also import other style files */
 
 html, body {
-    background: linear-gradient(180deg, rgba(7,7,7,1) 0%, rgba(0,0,0,0.8) 90%, rgba(70,0,0,1) 100%);
+    background: linear-gradient(180deg, rgba(7,7,7,1) 0%, rgb(0,0,0) 90%, rgba(70,0,0,1) 100%);
 }
 
 input[type=text] {
@@ -20,7 +20,7 @@ button {
     border-radius: 6px;
     font-size: 1.5rem;
     color: #ccc;
-    background: #111;
+    background: #ff0000;
     transition: .2s all ease-in-out;
 }
 

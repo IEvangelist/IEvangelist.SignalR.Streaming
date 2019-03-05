@@ -1,12 +1,12 @@
-import { Component, AfterViewInit, ViewChild, ElementRef, Renderer2 } from '@angular/core';
-import { HubConnectionBuilder, LogLevel, HubConnection, Subject, HubConnectionState } from '@aspnet/signalr';
+import { Component, AfterViewInit, ViewChild, ElementRef, Renderer2, OnInit } from '@angular/core';
+import { HubConnectionBuilder, LogLevel, HubConnection, Subject, HubConnectionState, ISubscription } from '@aspnet/signalr';
 
 @Component({
     selector: 'home',
     templateUrl: './home.component.html',
     styleUrls: ['./home.component.css']
 })
-export class HomeComponent implements AfterViewInit {
+export class HomeComponent implements AfterViewInit, OnInit {
     @ViewChild('video') videoElement: ElementRef;
     @ViewChild('canvas') canvasElement: ElementRef;
     @ViewChild('ascii') asciiElement: ElementRef;
@@ -18,9 +18,10 @@ export class HomeComponent implements AfterViewInit {
     private context: CanvasRenderingContext2D;
     private ascii: HTMLPreElement;
     private connection: HubConnection;
-    private subject: signalR.Subject<string>;
-
+    private subject: Subject<string>;
+    private streams: string[] = [];
     private asciiChars: string[];
+    private remoteSubscription: ISubscription<any>;
 
     constructor(private readonly renderer: Renderer2) {
         this.connection =
@@ -31,6 +32,11 @@ export class HomeComponent implements AfterViewInit {
 
         this.asciiChars =
             ['@', '#', '$', '=', '*', '!', ';', ':', '~', '-', ',', '.', '&nbsp;', '&nbsp;'];
+    }
+
+    async ngOnInit() {
+        await this.connection.start();
+        this.streams = await this.connection.invoke<string[]>('getAvailabeStreams');
     }
 
     ngAfterViewInit(): void {
@@ -67,35 +73,59 @@ export class HomeComponent implements AfterViewInit {
 
     private isStreaming = false;
 
-    startStream() {
-        //if (this.connection.state === HubConnectionState.Disconnected) {
-        //    await this.connection.start();
-        //}
+    async startStream() {
+        if (this.connection.state === HubConnectionState.Disconnected) {
+            await this.connection.start();
+        }
 
-
-        //if (!this.subject) {
-        //    this.subject = new Subject<string>();
-        //}
+        if (!this.subject) {
+            this.subject = new Subject<string>();
+        }
 
         this.isStreaming = true;
-        this.tryDrawFrame();        
-        //await this.connection.send('startStream', this.streamName, this.subject);
+        this.tryDrawFrame();    
+        
+        await this.connection.send('startStream', this.streamName, this.subject);
     }
 
     stopStream() {
+        this.subject.complete();
         this.isStreaming = false;
+    }
+
+    async watchStream(streamName: string) {
+        this.stopWatchingStream();
+        this.remoteSubscription =
+            this.connection
+                .stream("WatchStream", streamName)
+                .subscribe({
+                    next: ascii => {
+                        this.renderer.setProperty(this.ascii, 'innerHTML', ascii);
+                    },
+                    complete: () => {
+                        console.log("Stream is finished.");
+                    },
+                    error: err => {
+                        console.log("Failed to watch the stream: " + err);
+                    },
+                });
+    }
+
+    stopWatchingStream() {
+        if (this.remoteSubscription) {
+            this.remoteSubscription.dispose();
+        }
     }
 
     private tryDrawFrame() {
         try {
             if (this.isStreaming) {
-                const height = 72;
-                const width = 96;
+                const height = 72, width = 96;
                 this.context.drawImage(this.video, 0, 0, width, height);
                 const imageData = this.context.getImageData(0, 0, width, height).data;
                 const asciiStr = this.getAsciiString(imageData, width, height);
                 this.renderer.setProperty(this.ascii, 'innerHTML', asciiStr);
-                //this.subject.next(asciiStr);   
+                this.subject.next(asciiStr);   
             }
         } finally {
             if (this.isStreaming) {
@@ -103,21 +133,19 @@ export class HomeComponent implements AfterViewInit {
                     if (this.isStreaming) {
                         this.tryDrawFrame();
                     }
-                }, 15);
+                }, 30);
             }
         }
     }
 
     private getAsciiString(imageData: Uint8ClampedArray, width: number, height: number) {
         let str = '';
-        for (let i = 0; i < width * height; ++i) {
+        for (let i = 0; i < width * height; ++ i) {
             if (i % width === 0) {
                 str += '\n';
             }
-
             const rgb = this.toRGB(imageData, i);
             const val = Math.max(rgb[0], rgb[1], rgb[2]) / 255;
-            // const modColor = i % 2 == 1 ? 'background-' : '';
 
             str += `<font style='color:${this.toHex(rgb[0], rgb[1], rgb[2])}'>${this.getChar(val)}</font>`;
         }

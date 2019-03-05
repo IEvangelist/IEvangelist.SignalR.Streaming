@@ -3,12 +3,22 @@
         <video #video autoplay></video>
         <canvas #canvas></canvas>
         <div class="center">
+            <div class="stream-list">
+                <h2>Available Streams</h2>
+                <ul>
+                    <li *ngFor="let stream of streams">
+                        <span [innerHtml]="stream"></span>
+                        <button (click)="watchStream(stream)">Watch Stream</button>
+                        <button (click)="stopWatchingStream()">Stop Watching Stream</button>
+                    </li>
+                </ul>
+            </div>
             <pre id="ascii" #ascii></pre>
         </div>
     </div>
     <div class="controls">
-        <input type="text" [(ngModel)]="streamName" />
-        <button class='button' (click)="startStream()">Start</button>
-        <button class='button' (click)="stopStream()">Stop</button>
+        <input type="text" [(ngModel)]="streamName" autofocus />
+        <button class='button' (click)="startStream()" [disabled]="isStreaming">Start Streaming</button>
+        <button class='button' (click)="stopStream()" [disabled]="!isStreaming">Stop Streaming</button>
     </div>
 </div>
