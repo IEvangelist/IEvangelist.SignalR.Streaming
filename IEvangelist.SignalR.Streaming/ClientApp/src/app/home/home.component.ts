@@ -181,7 +181,7 @@ export class HomeComponent implements AfterViewInit, OnInit {
 
     private getAsciiString(imageData: Uint8ClampedArray, width: number, height: number) {
         let str = '';
-        this.lastFrame = [];
+        // this.lastFrame = [];
 
         for (let i = 1; i < width * height; ++ i) {
             if (i % width === 0) {
@@ -198,7 +198,7 @@ export class HomeComponent implements AfterViewInit, OnInit {
                 : this.toHex(rgb[0], rgb[1], rgb[2]);
 
             str += `<font style='${colorAttr}:${color}'>${char}</font>`;
-            this.lastFrame.push(char);
+            // this.lastFrame.push(char);
         }
 
         return str;
@@ -214,7 +214,7 @@ export class HomeComponent implements AfterViewInit, OnInit {
 
     private toHexStr(val: number) {
         const hex = val.toString(16);
-        return hex.length == 1 ? `0${hex}` : hex;
+        return hex.length === 1 ? `0${hex}` : hex;
     }
 
     private getChar(val: number) {
