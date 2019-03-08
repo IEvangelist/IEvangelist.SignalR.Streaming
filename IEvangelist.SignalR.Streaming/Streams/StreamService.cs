@@ -1,7 +1,6 @@
 ﻿using Microsoft.AspNetCore.SignalR;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
-using System.Linq;
 using System.Threading;
 using System.Threading.Channels;
 using System.Threading.Tasks;
@@ -15,27 +14,14 @@ namespace IEvangelist.SignalR.Streaming.Streams
 
         public StreamService() => _streams = new ConcurrentDictionary<string, StreamReference>();
 
-        public IList<string> GetAvailableStreams() => _streams.Keys.ToList();
-
-        public ChannelReader<string> WatchStream(string name, CancellationToken token)
+        public List<string> ListStreams()
         {
-            if (!_streams.TryGetValue(name, out var streamReference))
+            var streams = new List<string>();
+            foreach(var stream in _streams.Keys)
             {
-                throw new HubException("stream doesn't exist");
+                streams.Add(stream);
             }
-
-            var id = Interlocked.Increment(ref _globalClientId);
-            var channel = Channel.CreateBounded<string>(new BoundedChannelOptions(2)
-            {
-                FullMode = BoundedChannelFullMode.DropOldest
-            });
-
-            streamReference.Viewers.TryAdd(id, channel);
-
-            // Register for client closing stream, this token will always fire (handled by SignalR)
-            token.Register(() => streamReference.Viewers.TryRemove(id, out _));
-
-            return channel.Reader;
+            return streams;
         }
 
         public async Task ExecuteStreamAsync(string name, ChannelReader<string> stream)
@@ -80,6 +66,27 @@ namespace IEvangelist.SignalR.Streaming.Streams
                     viewer.Value.Writer.TryComplete();
                 }
             }
+        }
+
+        public ChannelReader<string> Subscribe(string name, CancellationToken token)
+        {
+            if (!_streams.TryGetValue(name, out var streamReference))
+            {
+                throw new HubException("stream doesn't exist");
+            }
+
+            var id = Interlocked.Increment(ref _globalClientId);
+            var channel = Channel.CreateBounded<string>(new BoundedChannelOptions(2)
+            {
+                FullMode = BoundedChannelFullMode.DropOldest
+            });
+
+            streamReference.Viewers.TryAdd(id, channel);
+
+            // Register for client closing stream, this token will always fire (handled by SignalR)
+            token.Register(() => streamReference.Viewers.TryRemove(id, out _));
+
+            return channel.Reader;
         }
     }
 }

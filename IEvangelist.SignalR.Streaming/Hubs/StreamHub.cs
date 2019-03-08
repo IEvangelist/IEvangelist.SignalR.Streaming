@@ -13,8 +13,8 @@ namespace IEvangelist.SignalR.Streaming.Hubs
 
         public StreamHub(IStreamService streamService) => _streamService = streamService;
 
-        public IList<string> GetAvailableStreams()
-            => _streamService.GetAvailableStreams();
+        public List<string> ListStreams()
+            => _streamService.ListStreams();
 
         public async Task StartStream(string name, ChannelReader<string> stream)
         {
@@ -32,6 +32,6 @@ namespace IEvangelist.SignalR.Streaming.Hubs
         }
 
         public ChannelReader<string> WatchStream(string name, CancellationToken token) 
-            => _streamService.WatchStream(name, token);
+            => _streamService.Subscribe(name, token);
     }
 }

@@ -7,10 +7,10 @@ namespace IEvangelist.SignalR.Streaming.Streams
 {
     public interface IStreamService
     {
-        IList<string> GetAvailableStreams();
+        List<string> ListStreams();
 
         Task ExecuteStreamAsync(string name, ChannelReader<string> stream);
 
-        ChannelReader<string> WatchStream(string name, CancellationToken token);
+        ChannelReader<string> Subscribe(string name, CancellationToken token);
     }
 }

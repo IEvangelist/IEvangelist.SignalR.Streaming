@@ -29,10 +29,15 @@ video {
     transform: rotateY(180deg);
 }
 
+.stream-list {
+    color: azure;
+    font-family: Arial;
+}
+
 #ascii {
     border-radius: 6px;
     border: dotted black 3px;
-    font: bold 1.5rem/.6rem monospace;
+    font: bold 1.2rem/.7rem monospace;
     font-weight: 900;
     display: block;
 }

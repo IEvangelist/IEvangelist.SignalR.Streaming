@@ -12,6 +12,10 @@ export class HomeComponent implements AfterViewInit, OnInit {
     @ViewChild('ascii') asciiElement: ElementRef;
 
     streamName: string;
+    streams: string[] = [];
+    isStreaming = false;
+    isWatching = false;
+    isInitialized = false;
 
     private video: HTMLVideoElement;
     private canvas: HTMLCanvasElement;
@@ -19,18 +23,18 @@ export class HomeComponent implements AfterViewInit, OnInit {
     private ascii: HTMLPreElement;
     private connection: HubConnection;
     private subject: Subject<string>;
-    private streams: string[] = [];
     private asciiChars: string[];
     private remoteSubscription: ISubscription<any>;
+    private lastFrame: string[];
 
     constructor(private readonly renderer: Renderer2) {
         this.connection =
             new HubConnectionBuilder()
                 .withUrl('/stream')
-                .configureLogging(LogLevel.Information)
+                .configureLogging(LogLevel.Debug)
                 .build();
 
-        this.connection.on("streamCreated", stream => {
+        this.connection.on("StreamCreated", stream => {
             if (this.streams) {
                 this.streams.push(stream);
             } else {
@@ -38,29 +42,29 @@ export class HomeComponent implements AfterViewInit, OnInit {
             }
         });
 
-        this.connection.on("streamRemoved", stream => {
+        this.connection.on("StreamRemoved", stream => {
             if (this.streams) {
                 const index = this.streams.indexOf(stream);
                 this.streams.splice(index, 1);
             }
         });
 
-        this.asciiChars =
-            ['@', '#', '$', '=', '*', '!', ';', ':', '~', '-', ',', '.', '&nbsp;', '&nbsp;'];
+        this.connection.onclose(async () => {
+            this.stopStream();
+            await this.connectToSignalR();
+        });
+
+        this.asciiChars = ['@', '#', '$', '=', '*', '!', ';', ':', '~', '-', ',', '.', '&nbsp;'];
     }
 
     async ngOnInit() {
-        await this.connection.start();
-        this.streams = await this.connection.invoke<string[]>('getAvailabeStreams');
+        await this.connectToSignalR();
+        this.streams = await this.connection.invoke<string[]>('ListStreams');
     }
 
     ngAfterViewInit(): void {
         if (this.videoElement && this.videoElement.nativeElement) {
             this.video = this.videoElement.nativeElement as HTMLVideoElement;
-            if (this.video) {
-                this.getMediaStreamPromise({ video: true })
-                    .then((stream: MediaStream) => this.video.srcObject = stream);
-            }
         }
         if (this.canvasElement && this.canvasElement.nativeElement) {
             this.canvas = this.canvasElement.nativeElement as HTMLCanvasElement;
@@ -70,6 +74,39 @@ export class HomeComponent implements AfterViewInit, OnInit {
         }
         if (this.asciiElement && this.asciiElement.nativeElement) {
             this.ascii = this.asciiElement.nativeElement as HTMLPreElement;
+        }
+    }
+
+    private async connectToSignalR() {
+        await this.connection.start().catch(_ => {
+            setTimeout(() => this.connectToSignalR(), 5000);
+        });
+    }
+
+    async startStream() {
+        if (!this.isInitialized) {
+            await this.startWebCam();
+        }
+
+        if (this.connection.state != HubConnectionState.Connected) {
+            await this.connectToSignalR();
+        }
+
+        if (!this.subject) {
+            this.subject = new Subject<string>();
+        }
+
+        await this.connection.send('StartStream', this.streamName, this.subject);
+
+        this.isStreaming = true;
+        this.tryDrawFrame();
+    }
+
+    async startWebCam() {
+        if (this.video) {
+            await this.getMediaStreamPromise({ video: true })
+                      .then((stream: MediaStream) => this.video.srcObject = stream);
+            this.isInitialized = true;
         }
     }
 
@@ -86,49 +123,38 @@ export class HomeComponent implements AfterViewInit, OnInit {
         return getMediaStream(constraints);
     }
 
-    private isStreaming = false;
-
-    async startStream() {
-        if (this.connection.state === HubConnectionState.Disconnected) {
-            await this.connection.start();
-        }
-
-        if (!this.subject) {
-            this.subject = new Subject<string>();
-        }
-
-        this.isStreaming = true;
-        this.tryDrawFrame();    
-        
-        await this.connection.send('startStream', this.streamName, this.subject);
-    }
 
     stopStream() {
-        this.subject.complete();
         this.isStreaming = false;
+        if (!this.subject) {
+            this.subject.complete();
+        }
     }
 
     async watchStream(streamName: string) {
         this.stopWatchingStream();
         this.remoteSubscription =
             this.connection
-                .stream("watchStream", streamName)
+                .stream('WatchStream', streamName)
                 .subscribe({
                     next: ascii => {
                         this.renderer.setProperty(this.ascii, 'innerHTML', ascii);
                     },
                     complete: () => {
-                        console.log("Stream is finished.");
+                        console.log('Stream is finished.');
                     },
                     error: err => {
-                        console.log("Failed to watch the stream: " + err);
+                        console.log(`Failed to watch the stream: ${err}`);
                     },
                 });
+
+        this.isWatching = true;
     }
 
     stopWatchingStream() {
         if (this.remoteSubscription) {
             this.remoteSubscription.dispose();
+            this.isWatching = false;
         }
     }
 
@@ -140,7 +166,7 @@ export class HomeComponent implements AfterViewInit, OnInit {
                 const imageData = this.context.getImageData(0, 0, width, height).data;
                 const asciiStr = this.getAsciiString(imageData, width, height);
                 this.renderer.setProperty(this.ascii, 'innerHTML', asciiStr);
-                this.subject.next(asciiStr);   
+                this.subject.next(asciiStr);
             }
         } finally {
             if (this.isStreaming) {
@@ -155,14 +181,24 @@ export class HomeComponent implements AfterViewInit, OnInit {
 
     private getAsciiString(imageData: Uint8ClampedArray, width: number, height: number) {
         let str = '';
-        for (let i = 0; i < width * height; ++ i) {
+        this.lastFrame = [];
+
+        for (let i = 1; i < width * height; ++ i) {
             if (i % width === 0) {
                 str += '\n';
+                this.lastFrame.push('\n');
             }
             const rgb = this.toRGB(imageData, i);
             const val = Math.max(rgb[0], rgb[1], rgb[2]) / 255;
+            const char = this.getChar(val);
+            const isSpace = char === '&nbsp;'
+            const colorAttr = isSpace ? 'background' : 'color';
+            const color = isSpace
+                ? `rgba(${rgb[0]},${rgb[1]},${rgb[2]},.2)`
+                : this.toHex(rgb[0], rgb[1], rgb[2]);
 
-            str += `<font style='color:${this.toHex(rgb[0], rgb[1], rgb[2])}'>${this.getChar(val)}</font>`;
+            str += `<font style='${colorAttr}:${color}'>${char}</font>`;
+            this.lastFrame.push(char);
         }
 
         return str;

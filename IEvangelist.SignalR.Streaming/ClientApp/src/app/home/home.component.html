@@ -4,12 +4,12 @@
         <canvas #canvas></canvas>
         <div class="center">
             <div class="stream-list">
-                <h2>Available Streams</h2>
+                <h1>Available Streams</h1>
                 <ul>
                     <li *ngFor="let stream of streams">
                         <span [innerHtml]="stream"></span>
-                        <button (click)="watchStream(stream)">Watch Stream</button>
-                        <button (click)="stopWatchingStream()">Stop Watching Stream</button>
+                        <button (click)="watchStream(stream)" [disabled]="isWatching">Watch</button>
+                        <button (click)="stopWatchingStream()" [disabled]="!isWatching">Stop</button>
                     </li>
                 </ul>
             </div>
@@ -18,7 +18,7 @@
     </div>
     <div class="controls">
         <input type="text" [(ngModel)]="streamName" autofocus />
-        <button class='button' (click)="startStream()" [disabled]="isStreaming">Start Streaming</button>
-        <button class='button' (click)="stopStream()" [disabled]="!isStreaming">Stop Streaming</button>
+        <button (click)="startStream()" [disabled]="isStreaming">Start Streaming</button>
+        <button (click)="stopStream()" [disabled]="!isStreaming">Stop Streaming</button>
     </div>
 </div>

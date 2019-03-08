@@ -20,8 +20,8 @@ namespace IEvangelist.SignalR.Streaming
             services.AddMvc()
                     .AddNewtonsoftJson();
 
-            services.AddSignalR();
-            services.AddSpaStaticFiles(configuration => configuration.RootPath = "ClientApp/dist");
+            services.AddSignalR(o => o.EnableDetailedErrors = true);
+            services.AddSpaStaticFiles(configuration => configuration.RootPath = "ClientApp/dist/ClientApp");
 
             services.AddSingleton<IStreamService, StreamService>();
         }
@@ -43,9 +43,13 @@ namespace IEvangelist.SignalR.Streaming
             app.UseStaticFiles();
             app.UseSpaStaticFiles();
 
-            app.UseSignalR(routes => routes.MapHub<StreamHub>("/stream"));
+            app.UseSignalR(routes => routes.MapHub<StreamHub>("/stream", o => 
+            {
+                o.TransportMaxBufferSize = 1000000;
+                o.ApplicationMaxBufferSize = 1000000;
+            }));
 
-            app.UseMvc(routes =>
+                app.UseMvc(routes =>
             {
                 routes.MapRoute(
                     name: "default",
