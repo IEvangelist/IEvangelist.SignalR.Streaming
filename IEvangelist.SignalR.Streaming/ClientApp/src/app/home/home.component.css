@@ -1,21 +1,22 @@
 .grid {
     display: grid;
     height: calc(100vh - 20px);
-    grid-gap: 0;
-    grid-template-columns: 1fr;
-    grid-template-rows: 11fr 1fr;
-    grid-template-areas: "view" "controls";
+    grid-gap: 10px;
+    grid-template-columns: 1fr 7fr 1fr;
+    grid-template-rows: 1fr 7fr 1fr;
+    grid-template-areas: ". view" "left-side view" ". view";
+}
+
+.left-side {
+    grid-area: left-side;
+    display: block;
+    padding-left: 10px;
+    justify-content: center;
+    align-items: stretch;
 }
 
 .view {
     grid-area: view;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-}
-
-.controls {
-    grid-area: controls;
     display: flex;
     justify-content: center;
     align-items: center;
@@ -30,6 +31,7 @@ video {
 }
 
 .stream-list {
+    display: block;
     color: azure;
     font-family: Arial;
 }

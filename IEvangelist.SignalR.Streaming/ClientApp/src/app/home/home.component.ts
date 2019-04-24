@@ -1,5 +1,19 @@
-import { Component, AfterViewInit, ViewChild, ElementRef, Renderer2, OnInit } from '@angular/core';
-import { HubConnectionBuilder, LogLevel, HubConnection, Subject, HubConnectionState, ISubscription } from '@aspnet/signalr';
+import {
+    Component,
+    AfterViewInit,
+    ViewChild,
+    ElementRef,
+    Renderer2,
+    OnInit
+} from '@angular/core';
+import {
+    HubConnectionBuilder,
+    LogLevel,
+    HubConnection,
+    Subject,
+    HubConnectionState,
+    ISubscription
+} from '@aspnet/signalr';
 
 @Component({
     selector: 'home',
@@ -59,7 +73,7 @@ export class HomeComponent implements AfterViewInit, OnInit {
 
     async ngOnInit() {
         await this.connectToSignalR();
-        this.streams = await this.connection.invoke<string[]>('ListStreams');
+        this.streams = await this.connection.invoke<string[]>('ListStreams') || [];
     }
 
     ngAfterViewInit(): void {
@@ -84,9 +98,7 @@ export class HomeComponent implements AfterViewInit, OnInit {
     }
 
     async startStream() {
-        if (!this.isInitialized) {
-            await this.startWebCam();
-        }
+        await this.startWebCam();
 
         if (this.connection.state != HubConnectionState.Connected) {
             await this.connectToSignalR();
@@ -102,10 +114,20 @@ export class HomeComponent implements AfterViewInit, OnInit {
         this.tryDrawFrame();
     }
 
-    async startWebCam() {
-        if (this.video) {
-            await this.getMediaStreamPromise({ video: true })
+    async startWebCam(mediaDeviceInfo?: MediaDeviceInfo) {
+        const explicitlyReset = !!mediaDeviceInfo;
+        if (this.video && (!this.isInitialized || explicitlyReset)) {
+            const constraints: MediaStreamConstraints =
+                explicitlyReset
+                    ? { video: { advanced: [ { deviceId: mediaDeviceInfo.deviceId } ] } }
+                    : { video: true }
+            await this.getMediaStreamPromise(constraints)
                       .then((stream: MediaStream) => this.video.srcObject = stream);
+
+            if (explicitlyReset) {
+                this.context = this.canvas.getContext('2d');
+            }
+
             this.isInitialized = true;
         }
     }
@@ -122,7 +144,6 @@ export class HomeComponent implements AfterViewInit, OnInit {
 
         return getMediaStream(constraints);
     }
-
 
     stopStream() {
         this.isStreaming = false;
@@ -164,9 +185,11 @@ export class HomeComponent implements AfterViewInit, OnInit {
                 const height = 72, width = 96;
                 this.context.drawImage(this.video, 0, 0, width, height);
                 const imageData = this.context.getImageData(0, 0, width, height).data;
-                const asciiStr = this.getAsciiString(imageData, width, height);
-                this.renderer.setProperty(this.ascii, 'innerHTML', asciiStr);
-                this.subject.next(asciiStr);
+                if (imageData) {
+                    const asciiStr = this.getAsciiString(imageData, width, height);
+                    this.renderer.setProperty(this.ascii, 'innerHTML', asciiStr);
+                    this.subject.next(asciiStr);
+                }
             }
         } finally {
             if (this.isStreaming) {
@@ -183,10 +206,10 @@ export class HomeComponent implements AfterViewInit, OnInit {
         let str = '';
         // this.lastFrame = [];
 
-        for (let i = 1; i < width * height; ++ i) {
+        for (let i = 1; i < width * height; ++i) {
             if (i % width === 0) {
                 str += '\n';
-                this.lastFrame.push('\n');
+                //this.lastFrame.push('\n');
             }
             const rgb = this.toRGB(imageData, i);
             const val = Math.max(rgb[0], rgb[1], rgb[2]) / 255;
@@ -202,6 +225,12 @@ export class HomeComponent implements AfterViewInit, OnInit {
         }
 
         return str;
+    }
+
+    async onSettingsChanged(mediaDeviceInfo: MediaDeviceInfo) {
+        if (mediaDeviceInfo) {
+            await this.startWebCam(mediaDeviceInfo);
+        }
     }
 
     private toRGB(imageData: Uint8ClampedArray, i: number) {

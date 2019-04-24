@@ -1,0 +1,7 @@
+<form class="form">
+    <div class="form-group">
+        <device-select [kind]="'videoinput'" #videoSelect
+                       [label]="'Video Source'" [devices]="devices"
+                       (settingsChanged)="onSettingsChanged($event)"></device-select>
+    </div>
+</form>

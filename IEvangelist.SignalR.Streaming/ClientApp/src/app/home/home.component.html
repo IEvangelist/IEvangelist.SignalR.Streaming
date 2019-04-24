@@ -1,24 +1,49 @@
 <div class="grid">
+    <div class="left-side">
+        <form class="pb-3">
+            <div class="form-group">
+                <label class="text">Share Stream</label>
+            </div>
+            <div class="form-group">
+                <input type="text" name="stream" placeholder="Stream Name" 
+                       autocomplete="off" [(ngModel)]="streamName" autofocus />
+            </div>
+            <div class="form-group" *ngIf="!isStreaming">
+                <button (click)="startStream()" [disabled]="!streamName">Start Streaming</button>
+            </div>
+            <div class="form-group" *ngIf="isStreaming">
+                <button (click)="stopStream()">Stop Streaming</button>
+            </div>
+        </form>
+        
+        <hr />
+        
+        <div class="pt-3 pb-3">
+            <settings (settingsChanged)="onSettingsChanged($event)"></settings>
+        </div>
+        <hr />
+
+        <div class="pt-3 stream-list">
+            <span class="text">Available Streams</span>
+            <ul>
+                <li *ngFor="let stream of streams">
+                    <span [innerHtml]="stream"></span>
+                    <div *ngIf="!isWatching">
+                        <button (click)="watchStream(stream)">Watch</button>
+                    </div>
+                    <div *ngIf="isWatching">
+                        <button (click)="stopWatchingStream()">Stop</button>
+                    </div>
+                </li>
+            </ul>
+        </div>
+    </div>
+
     <div class="view">
         <video #video autoplay></video>
         <canvas #canvas></canvas>
         <div class="center">
-            <div class="stream-list">
-                <h1>Available Streams</h1>
-                <ul>
-                    <li *ngFor="let stream of streams">
-                        <span [innerHtml]="stream"></span>
-                        <button (click)="watchStream(stream)" [disabled]="isWatching">Watch</button>
-                        <button (click)="stopWatchingStream()" [disabled]="!isWatching">Stop</button>
-                    </li>
-                </ul>
-            </div>
             <pre id="ascii" #ascii></pre>
         </div>
-    </div>
-    <div class="controls">
-        <input type="text" [(ngModel)]="streamName" autofocus />
-        <button (click)="startStream()" [disabled]="isStreaming">Start Streaming</button>
-        <button (click)="stopStream()" [disabled]="!isStreaming">Stop Streaming</button>
     </div>
 </div>
