@@ -14,6 +14,7 @@ import {
     HubConnectionState,
     ISubscription
 } from '@aspnet/signalr';
+import { MessagePackHubProtocol } from '@aspnet/signalr-protocol-msgpack';
 
 @Component({
     selector: 'home',
@@ -44,6 +45,7 @@ export class HomeComponent implements AfterViewInit, OnInit {
     constructor(private readonly renderer: Renderer2) {
         this.connection =
             new HubConnectionBuilder()
+                .withHubProtocol(new MessagePackHubProtocol())
                 .withUrl('/stream')
                 .configureLogging(LogLevel.Debug)
                 .build();

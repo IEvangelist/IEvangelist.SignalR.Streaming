@@ -2,6 +2,7 @@ using IEvangelist.SignalR.Streaming.Hubs;
 using IEvangelist.SignalR.Streaming.Streams;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.SpaServices.AngularCli;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -17,12 +18,15 @@ namespace IEvangelist.SignalR.Streaming
         // This method gets called by the runtime. Use this method to add services to the container.
         public void ConfigureServices(IServiceCollection services)
         {
-            services.AddMvc()
+            services.AddMvc(o => o.EnableEndpointRouting = false)
+                    .SetCompatibilityVersion(CompatibilityVersion.Version_3_0)
                     .AddNewtonsoftJson();
 
             services.AddSpaStaticFiles(options => options.RootPath = "ClientApp/dist/ClientApp");
 
-            services.AddSignalR(options => options.EnableDetailedErrors = true);
+            services.AddSignalR(options => options.EnableDetailedErrors = true)
+                    .AddMessagePackProtocol();
+
             services.AddSingleton<IStreamService, StreamService>();
         }
 
@@ -43,21 +47,20 @@ namespace IEvangelist.SignalR.Streaming
             app.UseStaticFiles();
             app.UseSpaStaticFiles();
 
-            app.UseSignalR(routes =>
-            {
-                routes.MapHub<StreamHub>("/stream", options =>
-                {
-                    options.TransportMaxBufferSize = 1000000;
-                    options.ApplicationMaxBufferSize = 1000000;
-                });
-            });
+            app.UseSignalR(
+                routes => 
+                routes.MapHub<StreamHub>("/stream",
+                    options =>
+                    {
+                        options.TransportMaxBufferSize = 1000000;
+                        options.ApplicationMaxBufferSize = 1000000;
+                    }));
 
-            app.UseMvc(routes =>
-            {
+            app.UseMvc(
+                routes =>
                 routes.MapRoute(
                     name: "default",
-                    template: "{controller}/{action=Index}/{id?}");
-            });
+                    template: "{controller}/{action=Index}/{id?}"));
 
             app.UseSpa(spa =>
             {
