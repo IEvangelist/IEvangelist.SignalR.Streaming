@@ -11,11 +11,10 @@ namespace IEvangelist.SignalR.Streaming
 {
     public class Startup
     {
-        public IConfiguration Configuration { get; }
+        readonly IConfiguration _configuration;
 
-        public Startup(IConfiguration configuration) => Configuration = configuration;
+        public Startup(IConfiguration configuration) => _configuration = configuration;
 
-        // This method gets called by the runtime. Use this method to add services to the container.
         public void ConfigureServices(IServiceCollection services)
         {
             services.AddMvc(o => o.EnableEndpointRouting = false)
@@ -24,14 +23,17 @@ namespace IEvangelist.SignalR.Streaming
 
             services.AddSpaStaticFiles(options => options.RootPath = "ClientApp/dist/ClientApp");
 
-            services.AddSignalR(options => options.EnableDetailedErrors = true)
+            services.AddSignalR(options =>
+                    {
+                        options.EnableDetailedErrors = true;
+                        options.MaximumReceiveMessageSize = 1000000L;
+                    })
                     .AddMessagePackProtocol();
 
             services.AddSingleton<IStreamService, StreamService>();
         }
 
-        // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
-        public void Configure(IApplicationBuilder app, IHostingEnvironment env)
+        public void Configure(IApplicationBuilder app, IWebHostEnvironment env)
         {
             if (env.IsDevelopment())
             {
@@ -47,9 +49,9 @@ namespace IEvangelist.SignalR.Streaming
             app.UseStaticFiles();
             app.UseSpaStaticFiles();
 
-            app.UseSignalR(
-                routes => 
-                routes.MapHub<StreamHub>("/stream",
+            app.UseRouting();
+            app.UseEndpoints(endpoints =>
+                endpoints.MapHub<StreamHub>("/stream",
                     options =>
                     {
                         options.TransportMaxBufferSize = 1000000;

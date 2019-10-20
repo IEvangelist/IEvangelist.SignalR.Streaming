@@ -1,6 +1,7 @@
 ﻿using Microsoft.AspNetCore.SignalR;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
+using System.Linq;
 using System.Threading;
 using System.Threading.Channels;
 using System.Threading.Tasks;
@@ -10,19 +11,9 @@ namespace IEvangelist.SignalR.Streaming.Streams
     public class StreamService : IStreamService
     {
         long _globalClientId;
-        readonly ConcurrentDictionary<string, StreamReference> _streams;
+        readonly ConcurrentDictionary<string, StreamReference> _streams = new ConcurrentDictionary<string, StreamReference>();
 
-        public StreamService() => _streams = new ConcurrentDictionary<string, StreamReference>();
-
-        public List<string> ListStreams()
-        {
-            var streams = new List<string>();
-            foreach(var stream in _streams.Keys)
-            {
-                streams.Add(stream);
-            }
-            return streams;
-        }
+        public List<string> ListStreams() => _streams.Keys.ToList();
 
         public async Task ExecuteStreamAsync(string name, ChannelReader<string> stream)
         {
