@@ -11,34 +11,31 @@ namespace IEvangelist.SignalR.Streaming.Streams
     public class StreamService : IStreamService
     {
         long _globalClientId;
-        readonly ConcurrentDictionary<string, StreamReference> _streams = new ConcurrentDictionary<string, StreamReference>();
+
+        readonly ConcurrentDictionary<string, StreamReference> _streams = 
+            new ConcurrentDictionary<string, StreamReference>();
 
         public List<string> ListStreams() => _streams.Keys.ToList();
 
-        public async Task ExecuteStreamAsync(string name, ChannelReader<string> stream)
+        public async Task ExecuteStreamAsync(string name, IAsyncEnumerable<string> stream)
         {
             var streamReference = new StreamReference(stream);
 
-            // Add before yielding
-            // This fixes a race where we tell clients a new stream arrives before adding the stream
             _streams.TryAdd(name, streamReference);
 
             await Task.Yield();
 
             try
             {
-                while (await stream.WaitToReadAsync())
+                await foreach (var item in stream)
                 {
-                    while (stream.TryRead(out var item))
+                    foreach (var viewer in streamReference.Viewers)
                     {
-                        foreach (var viewer in streamReference.Viewers)
+                        try
                         {
-                            try
-                            {
-                                await viewer.Value.Writer.WriteAsync(item);
-                            }
-                            catch { }
+                            await viewer.Value.Writer.WriteAsync(item);
                         }
+                        catch { }
                     }
                 }
             }
@@ -59,11 +56,11 @@ namespace IEvangelist.SignalR.Streaming.Streams
             }
         }
 
-        public ChannelReader<string> Subscribe(string name, CancellationToken token)
+        public IAsyncEnumerable<string> Subscribe(string name, CancellationToken token)
         {
-            if (!_streams.TryGetValue(name, out var streamReference))
+            if (!_streams.TryGetValue(name, out var source))
             {
-                throw new HubException("stream doesn't exist");
+                throw new HubException($"The '{name}' stream doesn't exist.");
             }
 
             var id = Interlocked.Increment(ref _globalClientId);
@@ -72,12 +69,13 @@ namespace IEvangelist.SignalR.Streaming.Streams
                 FullMode = BoundedChannelFullMode.DropOldest
             });
 
-            streamReference.Viewers.TryAdd(id, channel);
+            source.Viewers.TryAdd(id, channel);
 
-            // Register for client closing stream, this token will always fire (handled by SignalR)
-            token.Register(() => streamReference.Viewers.TryRemove(id, out _));
+            // Register for client closing stream, this token 
+            // will always fire (handled by SignalR).
+            token.Register(() => source.Viewers.TryRemove(id, out _));
 
-            return channel.Reader;
+            return channel.Reader.ReadAllAsync();
         }
     }
 }

@@ -1,6 +1,5 @@
 ﻿using System.Collections.Generic;
 using System.Threading;
-using System.Threading.Channels;
 using System.Threading.Tasks;
 
 namespace IEvangelist.SignalR.Streaming.Streams
@@ -9,8 +8,8 @@ namespace IEvangelist.SignalR.Streaming.Streams
     {
         List<string> ListStreams();
 
-        Task ExecuteStreamAsync(string name, ChannelReader<string> stream);
+        Task ExecuteStreamAsync(string name, IAsyncEnumerable<string> stream);
 
-        ChannelReader<string> Subscribe(string name, CancellationToken token);
+        IAsyncEnumerable<string> Subscribe(string name, CancellationToken token);
     }
 }
